@@ -254,6 +254,7 @@ def run_experiment(
     data_path = data_dir / CSV_NAME
     data_audit = dataset_quality_audit(frame)
     dataset_sha256 = file_sha256(data_path)
+    data_audit["dataset_sha256"] = dataset_sha256
     _write_json(output_dir / "data_quality_audit.json", data_audit)
     _write_json(
         output_dir / "run_config.json",

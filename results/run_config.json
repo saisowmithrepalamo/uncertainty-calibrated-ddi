@@ -10,7 +10,9 @@
   "bootstrap_repetitions": 500,
   "conformal_calibration_fraction": 0.15,
   "data_dir": "data",
+  "dataset_bytes": 522048,
   "dataset_doi": "https://doi.org/10.24432/C5HS5C",
+  "dataset_sha256": "dc6630cd9b1f0f853922fad78a1b6436570d3f1ec863f1dd5c4340ac56bc8a8e",
   "deferral_cost": 0.5,
   "false_negative_cost": 20.0,
   "false_positive_cost": 1.0,
@@ -33,5 +35,6 @@
   "test_fraction": 0.15,
   "train_fraction": 0.55,
   "xgb_estimators": 350,
+  "xgb_n_jobs": 1,
   "xgboost_package_version": "2.1.2"
 }
