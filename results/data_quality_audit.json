@@ -1,0 +1,13 @@
+{
+  "dataset_sha256": "dc6630cd9b1f0f853922fad78a1b6436570d3f1ec863f1dd5c4340ac56bc8a8e",
+  "duplicate_full_rows": 0,
+  "failure_mode_positive_with_target_zero_rows": 18,
+  "failure_mode_union_positive_rows": 348,
+  "missing_required_cells": 0,
+  "rows": 10000,
+  "target_failure_mode_or_rule_mismatches": 27,
+  "target_failure_rate": 0.0339,
+  "target_failures": 339,
+  "target_matches_failure_mode_or_rule": false,
+  "target_positive_without_failure_mode_rows": 9
+}

@@ -1,0 +1,10 @@
+{
+  "alpha": 0.1,
+  "class_one_nonconformity_quantile": 0.9827285559429954,
+  "class_zero_nonconformity_quantile": 0.012769394457528449,
+  "decision_encoding": {
+    "-1": "defer",
+    "0": "predict_no_failure",
+    "1": "predict_failure"
+  }
+}

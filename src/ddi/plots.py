@@ -48,11 +48,13 @@ def plot_risk_coverage(
 ) -> None:
     curve = risk_coverage_curve(y_true, probabilities)
     figure, axis = plt.subplots(figsize=(6.5, 5.2))
-    axis.plot(curve["coverage"], curve["selective_risk"], linewidth=2.2)
+    axis.plot(
+        curve["automation_coverage"], curve["selective_risk"], linewidth=2.2
+    )
     axis.set(
         xlabel="Automatic coverage (fraction not deferred)",
         ylabel="Error rate among automatic predictions",
-        title="Risk–coverage trade-off",
+        title="Selective risk–automation coverage trade-off",
     )
     axis.grid(alpha=0.25)
     _save(figure, destination)
@@ -60,12 +62,26 @@ def plot_risk_coverage(
 
 def plot_alpha_tradeoff(alpha_frame: pd.DataFrame, destination: Path) -> None:
     grouped = alpha_frame.groupby("alpha", as_index=False)[
-        ["coverage", "selective_risk", "mean_decision_cost"]
+        [
+            "automation_coverage",
+            "empirical_set_coverage",
+            "selective_risk",
+            "mean_decision_cost",
+        ]
     ].mean()
     figure, left_axis = plt.subplots(figsize=(7.2, 5.2))
     right_axis = left_axis.twinx()
     left_axis.plot(
-        grouped["alpha"], grouped["coverage"], marker="o", label="Coverage"
+        grouped["alpha"],
+        grouped["automation_coverage"],
+        marker="o",
+        label="Automation coverage",
+    )
+    left_axis.plot(
+        grouped["alpha"],
+        grouped["empirical_set_coverage"],
+        marker="D",
+        label="Empirical set coverage",
     )
     left_axis.plot(
         grouped["alpha"], grouped["selective_risk"], marker="s", label="Selective risk"
@@ -98,4 +114,3 @@ def plot_feature_importance(
     axis.set(xlabel="XGBoost feature importance", title="Top model features")
     axis.grid(axis="x", alpha=0.25)
     _save(figure, destination)
-

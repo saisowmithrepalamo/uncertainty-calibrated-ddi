@@ -1,0 +1,40 @@
+{
+  "alpha_grid": [
+    0.02,
+    0.05,
+    0.1,
+    0.15,
+    0.2
+  ],
+  "boosting_backend": "XGBoost",
+  "bootstrap_repetitions": 500,
+  "conformal_calibration_fraction": 0.15,
+  "data_dir": "data",
+  "dataset_bytes": 522048,
+  "dataset_doi": "https://doi.org/10.24432/C5HS5C",
+  "dataset_sha256": "dc6630cd9b1f0f853922fad78a1b6436570d3f1ec863f1dd5c4340ac56bc8a8e",
+  "deferral_cost": 0.5,
+  "false_negative_cost": 20.0,
+  "false_positive_cost": 1.0,
+  "mode": "paper",
+  "numpy": "1.26.4",
+  "output_dir": "results",
+  "pandas": "2.2.3",
+  "platform": "Linux-6.18.35-x86_64-with-glibc2.39",
+  "primary_alpha": 0.1,
+  "probability_calibration_fraction": 0.15,
+  "python": "3.12.13 (main, May  1 2026, 05:53:44) [GCC 13.3.0]",
+  "scikit_learn": "1.5.2",
+  "seeds": [
+    11,
+    23,
+    42,
+    67,
+    101
+  ],
+  "test_fraction": 0.15,
+  "train_fraction": 0.55,
+  "xgb_estimators": 350,
+  "xgb_n_jobs": 1,
+  "xgboost_package_version": "2.1.2"
+}

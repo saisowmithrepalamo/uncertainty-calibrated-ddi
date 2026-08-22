@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from importlib.metadata import PackageNotFoundError, version
 from typing import Any
 
@@ -29,11 +28,6 @@ except PackageNotFoundError:
 BOOSTING_BACKEND = "XGBoost" if XGBOOST_AVAILABLE else "sklearn HistGradientBoosting fallback"
 
 
-def _worker_count() -> int:
-    available = os.cpu_count() or 2
-    return max(1, min(available, 8))
-
-
 def train_logistic_baseline(
     X_train: pd.DataFrame, y_train: np.ndarray, seed: int
 ) -> Pipeline:
@@ -59,6 +53,7 @@ def train_boosted_tree(
     y_train: np.ndarray,
     seed: int,
     n_estimators: int,
+    n_jobs: int = 1,
 ) -> Any:
     positives = max(1, int(np.sum(y_train == 1)))
     negatives = max(1, int(np.sum(y_train == 0)))
@@ -77,10 +72,13 @@ def train_boosted_tree(
             objective="binary:logistic",
             eval_metric="logloss",
             tree_method="hist",
-            n_jobs=_worker_count(),
+            n_jobs=n_jobs,
             random_state=seed,
         )
-        model.fit(X_train, y_train)
+        # XGBoost rejects otherwise valid pandas column names containing square
+        # brackets (the AI4I sensor units use them extensively).  Train and
+        # infer positionally while retaining the DataFrame schema externally.
+        model.fit(X_train.to_numpy(), y_train)
         return model
 
     model = HistGradientBoostingClassifier(
@@ -96,7 +94,8 @@ def train_boosted_tree(
 
 
 def positive_probability(model: object, X: pd.DataFrame) -> np.ndarray:
-    probabilities = model.predict_proba(X)  # type: ignore[attr-defined]
+    model_input = X.to_numpy() if XGBOOST_AVAILABLE and isinstance(model, XGBClassifier) else X
+    probabilities = model.predict_proba(model_input)  # type: ignore[attr-defined]
     return np.asarray(probabilities[:, 1], dtype=float)
 
 
