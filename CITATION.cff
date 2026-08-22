@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+message: "If you use this software, cite the repository and the AI4I dataset."
+title: "Data-Driven Decision Intelligence with Uncertainty-Calibrated AI: Learning When to Predict and When to Defer"
+type: software
+version: 1.0.0
+date-released: 2026-08-22
+license: MIT
+references:
+  - type: dataset
+    title: "AI4I 2020 Predictive Maintenance Dataset"
+    doi: 10.24432/C5HS5C
+    year: 2020
+

@@ -1,0 +1,10 @@
+.venv/
+.DS_Store
+__pycache__/
+.pytest_cache/
+.matplotlib-cache/
+*.py[cod]
+data/
+quick_results/
+results/*
+!results/.gitkeep
