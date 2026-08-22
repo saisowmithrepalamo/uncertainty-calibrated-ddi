@@ -80,7 +80,10 @@ def train_boosted_tree(
             n_jobs=_worker_count(),
             random_state=seed,
         )
-        model.fit(X_train, y_train)
+        # XGBoost rejects otherwise valid pandas column names containing square
+        # brackets (the AI4I sensor units use them extensively).  Train and
+        # infer positionally while retaining the DataFrame schema externally.
+        model.fit(X_train.to_numpy(), y_train)
         return model
 
     model = HistGradientBoostingClassifier(
@@ -96,7 +99,8 @@ def train_boosted_tree(
 
 
 def positive_probability(model: object, X: pd.DataFrame) -> np.ndarray:
-    probabilities = model.predict_proba(X)  # type: ignore[attr-defined]
+    model_input = X.to_numpy() if XGBOOST_AVAILABLE and isinstance(model, XGBClassifier) else X
+    probabilities = model.predict_proba(model_input)  # type: ignore[attr-defined]
     return np.asarray(probabilities[:, 1], dtype=float)
 
 
