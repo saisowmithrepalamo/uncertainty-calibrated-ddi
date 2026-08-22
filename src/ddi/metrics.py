@@ -105,10 +105,12 @@ def selective_metrics(
     positive_count = max(1, int(np.sum(y == 1)))
     automatic_true_positives = int(np.sum((action == 1) & (y == 1)))
     return {
-        "coverage": float(np.mean(accepted)),
+        "automation_coverage": float(np.mean(accepted)),
         "deferral_rate": float(np.mean(deferred)),
         "selective_accuracy": (
-            float(np.mean(action[accepted] == y[accepted])) if accepted_count else float("nan")
+            float(np.mean(action[accepted] == y[accepted]))
+            if accepted_count
+            else float("nan")
         ),
         "selective_risk": (
             float(accepted_errors / accepted_count) if accepted_count else float("nan")
@@ -126,9 +128,45 @@ def selective_metrics(
     }
 
 
+def conformal_set_metrics(
+    y_true: np.ndarray, prediction_sets: np.ndarray
+) -> dict[str, float]:
+    """Empirical validity and set-size diagnostics for binary conformal sets."""
+
+    y = np.asarray(y_true, dtype=int)
+    sets = np.asarray(prediction_sets, dtype=bool)
+    if sets.shape != (len(y), 2):
+        raise ValueError("prediction_sets must have shape (n_samples, 2)")
+    if not set(np.unique(y)).issubset({0, 1}):
+        raise ValueError("y_true must contain only binary labels 0/1")
+
+    contains_true_label = sets[np.arange(len(y)), y]
+    class_zero = y == 0
+    class_one = y == 1
+    set_size = np.sum(sets, axis=1)
+    return {
+        "empirical_set_coverage": float(np.mean(contains_true_label)),
+        "empirical_class_zero_coverage": (
+            float(np.mean(contains_true_label[class_zero]))
+            if np.any(class_zero)
+            else float("nan")
+        ),
+        "empirical_class_one_coverage": (
+            float(np.mean(contains_true_label[class_one]))
+            if np.any(class_one)
+            else float("nan")
+        ),
+        "mean_prediction_set_size": float(np.mean(set_size)),
+        "singleton_rate": float(np.mean(set_size == 1)),
+        "empty_set_rate": float(np.mean(set_size == 0)),
+        "ambiguous_set_rate": float(np.mean(set_size == 2)),
+    }
+
+
 def bootstrap_metric_intervals(
     y_true: np.ndarray,
     proposed_decisions: np.ndarray,
+    proposed_prediction_sets: np.ndarray,
     baseline_decisions: np.ndarray,
     reference_probabilities: np.ndarray,
     false_positive_cost: float,
@@ -139,11 +177,49 @@ def bootstrap_metric_intervals(
 ) -> pd.DataFrame:
     y = np.asarray(y_true, dtype=int)
     proposed = np.asarray(proposed_decisions, dtype=int)
+    prediction_sets = np.asarray(proposed_prediction_sets, dtype=bool)
     baseline = np.asarray(baseline_decisions, dtype=int)
     p = np.asarray(reference_probabilities, dtype=float)
     rng = np.random.default_rng(seed)
+    point_decision_metrics = selective_metrics(
+        y,
+        proposed,
+        p,
+        false_positive_cost,
+        false_negative_cost,
+        deferral_cost,
+    )
+    point_conformal_metrics = conformal_set_metrics(y, prediction_sets)
+    point_proposed_cost = point_decision_metrics["mean_decision_cost"]
+    point_baseline_cost = decision_cost(
+        y,
+        baseline,
+        false_positive_cost,
+        false_negative_cost,
+        deferral_cost,
+    )
+    point_estimates = {
+        "automation_coverage": point_decision_metrics["automation_coverage"],
+        "empirical_set_coverage": point_conformal_metrics["empirical_set_coverage"],
+        "empirical_class_zero_coverage": point_conformal_metrics[
+            "empirical_class_zero_coverage"
+        ],
+        "empirical_class_one_coverage": point_conformal_metrics[
+            "empirical_class_one_coverage"
+        ],
+        "selective_risk": point_decision_metrics["selective_risk"],
+        "system_accuracy_assuming_correct_review": point_decision_metrics[
+            "system_accuracy_assuming_correct_review"
+        ],
+        "proposed_mean_cost": point_proposed_cost,
+        "baseline_mean_cost": point_baseline_cost,
+        "cost_reduction_vs_baseline": point_baseline_cost - point_proposed_cost,
+    }
     samples: dict[str, list[float]] = {
-        "coverage": [],
+        "automation_coverage": [],
+        "empirical_set_coverage": [],
+        "empirical_class_zero_coverage": [],
+        "empirical_class_one_coverage": [],
         "selective_risk": [],
         "system_accuracy_assuming_correct_review": [],
         "proposed_mean_cost": [],
@@ -160,6 +236,7 @@ def bootstrap_metric_intervals(
             false_negative_cost,
             deferral_cost,
         )
+        conformal_metrics = conformal_set_metrics(y[idx], prediction_sets[idx])
         proposed_cost = proposed_metrics["mean_decision_cost"]
         baseline_cost = decision_cost(
             y[idx],
@@ -168,7 +245,18 @@ def bootstrap_metric_intervals(
             false_negative_cost,
             deferral_cost,
         )
-        samples["coverage"].append(proposed_metrics["coverage"])
+        samples["automation_coverage"].append(
+            proposed_metrics["automation_coverage"]
+        )
+        samples["empirical_set_coverage"].append(
+            conformal_metrics["empirical_set_coverage"]
+        )
+        samples["empirical_class_zero_coverage"].append(
+            conformal_metrics["empirical_class_zero_coverage"]
+        )
+        samples["empirical_class_one_coverage"].append(
+            conformal_metrics["empirical_class_one_coverage"]
+        )
         samples["selective_risk"].append(proposed_metrics["selective_risk"])
         samples["system_accuracy_assuming_correct_review"].append(
             proposed_metrics["system_accuracy_assuming_correct_review"]
@@ -183,7 +271,7 @@ def bootstrap_metric_intervals(
         rows.append(
             {
                 "metric": metric,
-                "estimate": float(np.nanmean(array)),
+                "estimate": float(point_estimates[metric]),
                 "ci_lower_95": float(np.nanpercentile(array, 2.5)),
                 "ci_upper_95": float(np.nanpercentile(array, 97.5)),
             }
@@ -207,11 +295,11 @@ def risk_coverage_curve(
         rows.append(
             {
                 "threshold": float(threshold),
-                "coverage": float(np.mean(accepted)),
+                "automation_coverage": float(np.mean(accepted)),
                 "selective_risk": float(np.mean(prediction[accepted] != y[accepted])),
             }
         )
-    return pd.DataFrame(rows).sort_values("coverage")
+    return pd.DataFrame(rows).sort_values("automation_coverage")
 
 
 def summarize_across_seeds(
@@ -220,9 +308,8 @@ def summarize_across_seeds(
     numeric = [
         column
         for column in frame.select_dtypes(include=[np.number]).columns
-        if column != "seed"
+        if column != "seed" and column not in group_columns
     ]
     grouped = frame.groupby(group_columns, dropna=False)[numeric].agg(["mean", "std"])
     grouped.columns = [f"{metric}_{stat}" for metric, stat in grouped.columns]
     return grouped.reset_index()
-

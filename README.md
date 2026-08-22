@@ -88,7 +88,9 @@ Prediction and calibration:
 
 Decision quality:
 
-- automatic coverage and deferral rate;
+- automation coverage (fraction automatically decided) and deferral rate;
+- empirical overall and class-conditional conformal prediction-set coverage;
+- prediction-set size, singleton, empty-set, and ambiguous-set rates;
 - selective risk and selective accuracy;
 - system accuracy assuming deferred cases are correctly reviewed;
 - automatic failure recall;
@@ -118,8 +120,11 @@ results/
 ├── predictive_metrics_summary.csv
 ├── selective_metrics_by_seed.csv
 ├── selective_metrics_summary.csv
+├── conformal_metrics_by_seed.csv
+├── conformal_metrics_summary.csv
 ├── alpha_tradeoff.csv
 ├── conformal_thresholds.csv
+├── data_quality_audit.json
 ├── bootstrap_ci_primary_seed.csv
 ├── primary_seed_test_predictions.csv
 ├── models/
@@ -171,20 +176,28 @@ tests/                  Unit tests for leakage, splits, conformal logic, and cos
 ## Methodological limits
 
 - AI4I is synthetic. It is appropriate for a fast reproducible first study, but a strong journal submission should add a real maintenance dataset.
+- The current official CSV contains target/failure-mode inconsistencies relative to the documented OR rule. Each run records the exact counts in `results/data_quality_audit.json`; labels are not silently changed.
+- Automation coverage is the fraction of cases not deferred. It is not conformal set coverage; the experiment reports these quantities separately.
 - A deferred case is assumed to be correctly resolved by a human. If reviewer error data are available, replace this assumption with an empirical human-performance model.
 - Conformal validity depends on exchangeability between conformal-calibration and test examples.
 - The experiment measures associative prediction and decision utility; it does not establish causal effects.
-- Knowledge features use only sensor inputs, but AI4I's synthetic failure process is documented. Clearly disclose the engineered features and repeat the analysis without them, as this repository does.
+- Knowledge features use only sensor inputs, but the thermal, power, and wear-load features closely match documented rules used to generate AI4I failures. Clearly disclose this alignment and repeat the analysis without them, as this repository does.
+- Five seeds measure sensitivity to random splits of the same synthetic dataset; they are not independent external replications.
+- The bootstrap intervals use only the primary seed's test partition.
+- AI4I is identified by UCI as a time-series dataset, while this experiment uses stratified random row splits. Add temporal and external validation before making deployment claims.
+- Exact XGBoost values can vary across operating systems and CPU architectures. Paper mode uses one XGBoost worker to reduce thread-level variation and saves the platform, versions, predictions, and dataset SHA-256 for auditability.
 
 ## Reproducibility checklist
 
 - Pinned package versions
 - Fixed random seeds
 - Cached official dataset and logged dataset DOI
+- Logged dataset SHA-256, byte size, and data-quality audit
 - No target or failure-subtype leakage
 - Separate probability- and conformal-calibration partitions
 - Predeclared primary alpha and cost scenario
 - Multi-seed results and bootstrap confidence intervals
+- Separate automation-coverage and conformal-set-coverage reporting
 - Saved predictions, fitted artifacts, plots, and run configuration
 
 This software is a research prototype, not a safety-certified maintenance system.

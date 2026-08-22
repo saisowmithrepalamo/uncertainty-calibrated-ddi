@@ -100,6 +100,43 @@ def validate_dataset(frame: pd.DataFrame) -> None:
         raise ValueError("Required dataset columns contain missing values")
 
 
+def dataset_quality_audit(frame: pd.DataFrame) -> dict[str, int | float | bool]:
+    """Measure integrity and target/subtype consistency without altering labels."""
+
+    validate_dataset(frame)
+    target = frame[TARGET].to_numpy(dtype=int)
+    failure_mode_union = frame[LEAKAGE_COLUMNS].max(axis=1).to_numpy(dtype=int)
+    target_positive_without_mode = int(
+        np.sum((target == 1) & (failure_mode_union == 0))
+    )
+    mode_positive_with_target_zero = int(
+        np.sum((target == 0) & (failure_mode_union == 1))
+    )
+    mismatch_count = target_positive_without_mode + mode_positive_with_target_zero
+    return {
+        "rows": int(len(frame)),
+        "target_failures": int(np.sum(target)),
+        "target_failure_rate": float(np.mean(target)),
+        "missing_required_cells": int(
+            frame[list(REQUIRED_COLUMNS)].isna().sum().sum()
+        ),
+        "duplicate_full_rows": int(frame.duplicated().sum()),
+        "failure_mode_union_positive_rows": int(np.sum(failure_mode_union)),
+        "target_positive_without_failure_mode_rows": target_positive_without_mode,
+        "failure_mode_positive_with_target_zero_rows": mode_positive_with_target_zero,
+        "target_failure_mode_or_rule_mismatches": mismatch_count,
+        "target_matches_failure_mode_or_rule": mismatch_count == 0,
+    }
+
+
+def file_sha256(path: str | Path) -> str:
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def load_ai4i(data_dir: str | Path, force_download: bool = False) -> pd.DataFrame:
     """Download, cache, validate, and return the official UCI AI4I dataset."""
 

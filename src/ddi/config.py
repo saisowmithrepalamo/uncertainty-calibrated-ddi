@@ -23,6 +23,7 @@ class ExperimentConfig:
     false_negative_cost: float = 20.0
     deferral_cost: float = 0.5
     xgb_estimators: int = 350
+    xgb_n_jobs: int = 1
     bootstrap_repetitions: int = 500
     output_dir: str = "results"
     data_dir: str = "data"
@@ -66,4 +67,3 @@ class ExperimentConfig:
     @property
     def data_path(self) -> Path:
         return Path(self.data_dir)
-

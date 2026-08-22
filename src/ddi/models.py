@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from importlib.metadata import PackageNotFoundError, version
 from typing import Any
 
@@ -29,11 +28,6 @@ except PackageNotFoundError:
 BOOSTING_BACKEND = "XGBoost" if XGBOOST_AVAILABLE else "sklearn HistGradientBoosting fallback"
 
 
-def _worker_count() -> int:
-    available = os.cpu_count() or 2
-    return max(1, min(available, 8))
-
-
 def train_logistic_baseline(
     X_train: pd.DataFrame, y_train: np.ndarray, seed: int
 ) -> Pipeline:
@@ -59,6 +53,7 @@ def train_boosted_tree(
     y_train: np.ndarray,
     seed: int,
     n_estimators: int,
+    n_jobs: int = 1,
 ) -> Any:
     positives = max(1, int(np.sum(y_train == 1)))
     negatives = max(1, int(np.sum(y_train == 0)))
@@ -77,7 +72,7 @@ def train_boosted_tree(
             objective="binary:logistic",
             eval_metric="logloss",
             tree_method="hist",
-            n_jobs=_worker_count(),
+            n_jobs=n_jobs,
             random_state=seed,
         )
         # XGBoost rejects otherwise valid pandas column names containing square
